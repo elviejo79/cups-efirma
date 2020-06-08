@@ -42,7 +42,7 @@ config_user_vars="MailSubject
         MailFrom
         MailBody"
 
-echo "DEBUG:email backend call arguments $@" 1>&2
+echo "DEBUG:email backend call arguments $*" 1>&2
 # when called without any arguments CUPS expects us to print a backend
 # info for use in the new printer page
 if [ $# -eq 0 ]; then
@@ -62,9 +62,9 @@ function getOptionFromPpd(){
         return
     fi
 
-    _default_option=`grep "^*Default$_option:" $_ppd`
+    _default_option=$(grep "^*Default$_option:" "$_ppd")
 
-    if [ $? -ne 0 ]; then
+    if [ "$_default_option" -ne 0 ]; then
         echo "WARNING:No default value for $_option found in $_ppd" 1>&2
         return
     fi
@@ -79,11 +79,11 @@ function getOptionFromPpd(){
         _ret=${_default_option_value/Custom./}
     else
         echo "DEBUG:Default value found" 1>&2
-        _default_value=`grep "^*$_option $_default_option_value/" $_ppd`
+        _default_value=$(grep "^*$_option $_default_option_value/" "$_ppd")
         _ret=${_default_value##*:}
     fi
 
-    echo ${_ret//\"}
+    echo "${_ret//\\\"}"
 }
 
 # This reads the queue default options from the queue-specific PPD, and then
@@ -93,10 +93,10 @@ if [ -z "$PPD" ]; then
     echo "ERROR:No PPD provided in request, unable to read options." 1>&2
 else
     for _var in $config_vars; do
-        _ret=$(getOptionFromPpd $PPD $_var)
-        export $_var="$_ret"
+        _ret=$(getOptionFromPpd "$PPD" "$_var")
+        export "$_var"="$_ret"
     done
-    echo "DEBUG:Environment after PPD parsing: `env`" 1>&2
+    echo "DEBUG:Environment after PPD parsing: $(env)" 1>&2
 fi
 
 if [ ! -x "$Mailx" ]; then
@@ -114,7 +114,9 @@ fi
 # look for billing information.
 echo "DEBUG:Options - $5" 1>&2
 for _option in $5; do
-    IFS== read _opt_name _opt_value <<< $_option
+    #SC1097: Unexpected ==. For assignment, use =. For comparison, use [/[[.
+    #IFS== read -r _opt_name _opt_value <<< "$_option"
+    read -r _opt_name _opt_value <<< "$_option"
 
     if [ "$_opt_name" == "job-billing" ]; then
         export BillingInfo="$_opt_value"
@@ -124,12 +126,12 @@ for _option in $5; do
         # Custom. prefix to user specified fields.
         # As a result we need to compare options to default options before
         # adding overrides, and strip the Custom.
-        _ret=$(getOptionFromPpd $PPD $_opt_name 1)
+        _ret=$(getOptionFromPpd "$PPD" "$_opt_name" 1)
         if [ "$_ret" == "$_opt_value" ]; then
             echo "DEBUG:$_opt_name seems to have default value $_ret" 1>&2
         else
             echo "DEBUG:Exporting $_opt_name=$_opt_value" 1>&2
-            export $_opt_name="${_opt_value#Custom.}"
+            export "$_opt_name"="${_opt_value#Custom.}"
         fi
     fi
 done
@@ -144,23 +146,18 @@ case "$MailToSource" in
         #    to a valid address.
         if [ -n "$MailTo" ]; then
             echo "DEBUG:Selecting to address from MailTo" 1>&2
-            break
         elif [[ "$2" == *@* ]]; then
             echo "DEBUG:Selecting to address from user name" 1>&2
             MailTo=$2
-            break
         elif [[ "$3" == *@* ]]; then
             echo "DEBUG:Selecting to address from job name" 1>&2
             MailTo=$3
-            break
         elif [ -n "$BillingInfo" ] && [[ "$BillingInfo" == *@* ]]; then
             echo "DEBUG:Selecting to address from billing info" 1>&2
             MailTo=$BillingInfo
-            break
         else
             echo "DEBUG:Selecting to address from user name (fallback)" 1>&2
             MailTo=$2
-            break
         fi
         ;;
     JobName)
@@ -196,7 +193,7 @@ fi
 
 # cut the mailx_ prefix from all mailx specific vars, and export them for
 # mailx
-for _var in `set|grep ^mailx_`; do
+for _var in $(set|grep ^mailx_); do
     export ${_var/mailx_/}
 done
 
@@ -205,20 +202,20 @@ done
 if ! [[ "$MAILRC" == /* ]]; then
     export MAILRC="$CUPS_SERVERROOT/$MAILRC"
 fi
-echo "DEBUG:Environment after exporting mailx variables: `env`" 1>&2
+echo "DEBUG:Environment after exporting mailx variables: $(env)" 1>&2
 
 echo 1>&2 # Apparently the first character emitted is somehow "eaten" by the reader
 if [ $# -eq 6 ]; then
     MAILFILE=$6
 else
-    MAILFILE=$(mktemp </dev/null $TempDirectory/$PdfFilePattern) ||
+    MAILFILE=$(mktemp </dev/null "$TempDirectory/$PdfFilePattern") ||
         (echo "ERROR:Failed to create temporary file" 1>&2; exit 1)
-    cat >$MAILFILE
+    cat >"$MAILFILE"
 fi
 
 MAILPDF="$MAILFILE.pdf"
 
-_epstopdf_status=$($EpsToPdf $MAILFILE -o $MAILPDF 2>&1)
+_epstopdf_status=$($EpsToPdf "$MAILFILE" -o "$MAILPDF" 2>&1)
 _epstopdf_rc=$?
 
 if [ $_epstopdf_rc -ne 0 ]; then
@@ -228,13 +225,13 @@ fi
 
 # without this mailx returns without error even if sending has failed
 export sendwait=1
-echo "DEBUG:echo '$MailBody' | $Mailx -n -r '$MailFrom' -s '$MailSubject' -a $MAILPDF $MailTo" 1>&2
-_mailx_status=$(echo "$MailBody" | $Mailx -n -r "$MailFrom" -s "$MailSubject" -a $MAILPDF $MailTo 2>&1)
+echo "DEBUG:echo '$MailBody' | $Mailx -n -r '$MailFrom' -s '$MailSubject' -a \"$MAILPDF\" $MailTo" 1>&2
+_mailx_status=$(echo "$MailBody" | $Mailx -n -r "$MailFrom" -s "$MailSubject" -a "$MAILPDF" "$MailTo" 2>&1)
 _mailx_rc=$?
 
-rm -f $MAILPDF
+rm -f "$MAILPDF"
 if [ $# -lt 6 ];then
-    rm -f $MAILFILE
+    rm -f "$MAILFILE"
 fi
 
 if [ $_mailx_rc -ne 0 ]; then
