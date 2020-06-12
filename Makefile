@@ -4,7 +4,7 @@ PS2PDF?=/usr/bin/epstopdf
 MAILX?=/usr/bin/mailx
 TMPDIR?=/tmp
 JO?=/usr/bin/jo
-MIIFIEL=/usr/bin/miIFiel.py
+MIIFIEL=/usr/bin/miIfiel.py
 Q?=@
 
 install:
