@@ -3,7 +3,8 @@ CUPS_BACKEND_DIR?=/usr/lib/cups/backend
 PS2PDF?=/usr/bin/epstopdf
 MAILX?=/usr/bin/mailx
 TMPDIR?=/tmp
-
+JO?=/usr/bin/jo
+MIIFIEL=/usr/bin/miIFiel.py
 Q?=@
 
 install:
@@ -17,6 +18,7 @@ install:
 check:
 	$(Q)test -x $(PS2PDF)||echo "epstopdf in $(PS2PDF) is not executable"
 	$(Q)test -x $(MAILX)||echo "mailx in $(MAILX) is not executable"
-
+	$(Q)test -x $(JO)||echo "epstopdf in $(JO) is not executable"
+	$(Q)test -x $(MIIFIEL)||echo "epstopdf in $(MIIFIEL) is not executable"
 inst_check: check
 	$(Q)lpinfo -m | grep -q efirma.ppd || echo "efirma.ppd not available in lpinfo listing"
