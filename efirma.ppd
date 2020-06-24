@@ -3,7 +3,7 @@
 *FileVersion:	"1.0"
 *LanguageVersion: English
 *LanguageEncoding: ISOLatin1
-*PCFileName:	"EMAIL.PPD"
+*PCFileName:	"EFIRMA.PPD"
 *Manufacturer:	"Generic"
 *Product:	"(email)"
 *cupsFax:	False
@@ -96,10 +96,10 @@
 *OpenUI *MailToSource/E-Mail Address source: PickOne
 *OrderDependency: 20 AnySetup *MailToSource
 *DefaultMailToSource: Auto
-*MailToSource Auto/Autodetect: "Auto"
-*MailToSource JobName/Job Name: "JobName"
-*MailToSource UserName/User Name: "UserName"
-*MailToSource BillingInfo/Billing Info: "BillingInfo"
+*MailToSource Auto/Autodetect:"Auto"
+*MailToSource JobName/Job Name:"JobName"
+*MailToSource UserName/User Name:"UserName"
+*MailToSource BillingInfo/Billing Info:"BillingInfo"
 *CloseUI: *MailToSource
 
 *% configuration for epstopdf

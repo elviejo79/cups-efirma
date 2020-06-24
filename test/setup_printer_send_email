@@ -1,13 +1,21 @@
-#! /bin/bash -x
+#! /bin/bash -e
 
+demo_pdf=$1
+email1=$2
+email2=$3
+email3=$4
+
+cd ../
 make check
 sudo make install
 make inst_check
+sudo systemctl restart cups
 sudo lpadmin -p timbrado.digital -E -v efirma:/sample -D 'firma digital' -L 'www.timbrado.digital' -m efirma.ppd
 sudo lpadmin -p timbrado.digital -E -omailx_MAILRC=Custom.mailrc.gmail
 sudo cupsenable --release timbrado.digital
+
 # lpr -P timbrado.digital /home/agarciafdz/demo.pdf -oMailSubject=my_subject -oSignator4=agarciafdz+Testigo2@gmail.com -oSignator3=agarciafdz+Testigo@gmail.com -oSignator1=agarciafdz+autor@gmail.com -oSignator2=agarciafdz@jag.ac
-lpr -P timbrado.digital /home/agarciafdz/demo.pdf -oMailSubject=agarciafdz+subject@gmail.com -oMailFrom=agarciafdz@gmail.com -oMailTo=agarciafdz@jag.ac
+lpr -P timbrado.digital "$demo_pdf" -oMailSubject="$email3" -oMailFrom="$email2" -oMailTo="$email1"
 lpstat -p timbrado.digital
 sleep 5
 lpstat -p timbrado.digital
